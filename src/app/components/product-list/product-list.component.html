@@ -1,0 +1,238 @@
+<div class="catalog-wrapper">
+
+  <!-- HEADER -->
+  <header class="catalog-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <span class="brand-dot">GUNG</span>
+        <span class="brand-sub">Product Catalog</span>
+      </div>
+      <div class="header-stats" *ngIf="!loading">
+        <div class="stat-chip">
+          <span class="stat-num">{{ totalCount }}</span>
+          <span class="stat-label">products</span>
+        </div>
+        <div class="stat-chip in-stock">
+          <span class="stat-num">{{ inStockCount }}</span>
+          <span class="stat-label">in stock</span>
+        </div>
+        <div class="stat-chip shown">
+          <span class="stat-num">{{ shownCount }}</span>
+          <span class="stat-label">shown</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="catalog-body">
+
+    <!-- FILTER SIDEBAR -->
+    <aside class="filter-sidebar">
+      <div class="filter-header">
+        <span class="filter-title">Filters</span>
+        <button class="clear-btn" *ngIf="hasActiveFilters" (click)="clearFilters()">Clear all</button>
+      </div>
+
+      <!-- Search by Name -->
+      <div class="filter-group">
+        <label class="filter-label">Name</label>
+        <div class="input-icon-wrap">
+          <svg class="input-icon" viewBox="0 0 16 16" fill="none">
+            <circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" stroke-width="1.5"/>
+            <path d="m10.5 10.5 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input
+            class="filter-input"
+            type="text"
+            placeholder="Search by name…"
+            [(ngModel)]="searchName"
+            (ngModelChange)="onFilterChange()"
+          />
+        </div>
+      </div>
+
+      <!-- Search by ID -->
+      <div class="filter-group">
+        <label class="filter-label">Article ID</label>
+        <div class="input-icon-wrap">
+          <svg class="input-icon" viewBox="0 0 16 16" fill="none">
+            <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M5 8h6M5 5.5h4M5 10.5h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <input
+            class="filter-input"
+            type="text"
+            placeholder="e.g. AV300"
+            [(ngModel)]="searchId"
+            (ngModelChange)="onFilterChange()"
+          />
+        </div>
+      </div>
+
+      <!-- Max Price -->
+      <div class="filter-group">
+        <label class="filter-label">Max price (SEK)</label>
+        <input
+          class="filter-input"
+          type="number"
+          placeholder="e.g. 5000"
+          [(ngModel)]="maxPriceInput"
+          (ngModelChange)="onFilterChange()"
+          min="0"
+        />
+      </div>
+
+      <!-- Category -->
+      <div class="filter-group">
+        <label class="filter-label">Category</label>
+        <select class="filter-select" [(ngModel)]="selectedCategory" (ngModelChange)="onFilterChange()">
+          <option value="">All categories</option>
+          <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+
+      <!-- Volume Range -->
+      <div class="filter-group">
+        <label class="filter-label">Volume (kg)</label>
+        <div class="range-row">
+          <input
+            class="filter-input range-input"
+            type="number"
+            placeholder="From"
+            [(ngModel)]="volFrom"
+            (ngModelChange)="onFilterChange()"
+            min="0"
+            step="0.1"
+          />
+          <span class="range-sep">—</span>
+          <input
+            class="filter-input range-input"
+            type="number"
+            placeholder="To"
+            [(ngModel)]="volTo"
+            (ngModelChange)="onFilterChange()"
+            min="0"
+            step="0.1"
+          />
+        </div>
+      </div>
+
+      <!-- In Stock Toggle -->
+      <div class="filter-group">
+        <label class="toggle-row">
+          <span class="filter-label mb-0">In stock only</span>
+          <div class="toggle-wrap">
+            <input
+              type="checkbox"
+              class="toggle-input"
+              [(ngModel)]="inStockOnly"
+              (ngModelChange)="onFilterChange()"
+              id="inStockToggle"
+            />
+            <label class="toggle-track" for="inStockToggle">
+              <span class="toggle-thumb"></span>
+            </label>
+          </div>
+        </label>
+      </div>
+
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="catalog-main">
+
+      <!-- Loading skeleton -->
+      <div *ngIf="loading" class="loading-state">
+        <div class="skeleton-row" *ngFor="let i of [1,2,3,4,5,6,7,8]">
+          <div class="skel skel-id"></div>
+          <div class="skel skel-name"></div>
+          <div class="skel skel-cat"></div>
+          <div class="skel skel-price"></div>
+          <div class="skel skel-vol"></div>
+          <div class="skel skel-stock"></div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="!loading && filteredProducts.length === 0" class="empty-state">
+        <svg viewBox="0 0 48 48" fill="none" class="empty-icon">
+          <circle cx="24" cy="24" r="22" stroke="currentColor" stroke-width="1.5" opacity="0.3"/>
+          <path d="M16 24h16M24 16v16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4" transform="rotate(45 24 24)"/>
+        </svg>
+        <p class="empty-title">No products found</p>
+        <p class="empty-sub">Try adjusting your filters</p>
+        <button class="btn-reset" (click)="clearFilters()">Reset filters</button>
+      </div>
+
+      <!-- Product Table -->
+      <div *ngIf="!loading && filteredProducts.length > 0" class="table-container">
+        <div class="results-bar">
+          <span class="results-count">{{ shownCount }} of {{ totalCount }} products</span>
+        </div>
+        <table class="product-table">
+          <thead>
+            <tr>
+              <th class="th-sortable" (click)="setSort('id')">
+                Article ID
+                <span class="sort-icon" [class.active]="sortField === 'id'">
+                  {{ sortField === 'id' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}
+                </span>
+              </th>
+              <th class="th-sortable" (click)="setSort('name')">
+                Name
+                <span class="sort-icon" [class.active]="sortField === 'name'">
+                  {{ sortField === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}
+                </span>
+              </th>
+              <th>Category</th>
+              <th class="th-sortable th-num" (click)="setSort('price')">
+                Price
+                <span class="sort-icon" [class.active]="sortField === 'price'">
+                  {{ sortField === 'price' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}
+                </span>
+              </th>
+              <th class="th-sortable th-num" (click)="setSort('volume')">
+                Volume
+                <span class="sort-icon" [class.active]="sortField === 'volume'">
+                  {{ sortField === 'volume' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}
+                </span>
+              </th>
+              <th class="th-sortable th-num" (click)="setSort('stock')">
+                Stock
+                <span class="sort-icon" [class.active]="sortField === 'stock'">
+                  {{ sortField === 'stock' ? (sortDir === 'asc' ? '↑' : '↓') : '↕' }}
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let product of filteredProducts" class="product-row">
+              <td>
+                <span class="product-id">{{ product.id }}</span>
+              </td>
+              <td>
+                <span class="product-name">{{ product.name }}</span>
+              </td>
+              <td>
+                <span class="category-badge">{{ product.categoryName }}</span>
+              </td>
+              <td class="td-num">
+                <span class="price-value">{{ formatPrice(product.price) }}</span>
+              </td>
+              <td class="td-num">
+                <span class="volume-value">{{ product.volume.toFixed(1) }} kg</span>
+              </td>
+              <td class="td-num">
+                <span class="stock-badge" [class.in-stock]="product.inStock" [class.out-stock]="!product.inStock">
+                  <span class="stock-dot"></span>
+                  {{ product.inStock ? product.stock.toFixed(1) : 'Out of stock' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+</div>
